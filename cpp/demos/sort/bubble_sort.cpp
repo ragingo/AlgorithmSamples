@@ -2,6 +2,7 @@
 
 #include "demo_registry.hpp"
 
+#include <algorithm>
 #include <iostream>
 #include <numeric>
 #include <random>
