@@ -151,10 +151,23 @@ jobs:
         if: needs.check-trigger.outputs.trigger_source == 'manual'
         uses: actions/checkout@v4
 
-      - name: Setup CMake
+      - name: Setup CMake (with cache)
+        id: cmake
         uses: lukka/get-cmake@latest
         with:
           cmakeVersion: '~4.1.0'
+          useCloudCache: false
+          useLocalCache: true
+
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: |
+            cpp/build
+            ~/.cmake
+          key: cmake-build-${{ matrix.os }}-${{ hashFiles('cpp/CMakeLists.txt', 'cpp/**/CMakeLists.txt') }}
+          restore-keys: |
+            cmake-build-${{ matrix.os }}-
 
       - name: Configure
         run: cmake -S cpp -B cpp/build -DBUILD_TESTS=ON
@@ -263,6 +276,12 @@ jobs:
         if: needs.check-trigger.outputs.trigger_source == 'manual'
         uses: actions/checkout@v4
 
+      - name: Cache clang-format
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/clang-format
+          key: clang-format-${{ runner.os }}
+
       - name: Install clang-format
         run: |
           sudo apt update
@@ -334,19 +353,45 @@ jobs:
         if: needs.check-trigger.outputs.trigger_source == 'manual'
         uses: actions/checkout@v4
 
-      - name: Setup CMake
+      - name: Check if CMake already available
+        id: check-cmake
+        run: |
+          if command -v cmake &> /dev/null && cmake --version | grep -q "4\.[1-9]"; then
+            echo "cmake_available=true" >> $GITHUB_OUTPUT
+            echo "Using system CMake: $(cmake --version)"
+          else
+            echo "cmake_available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup CMake (only if needed)
+        if: steps.check-cmake.outputs.cmake_available != 'true'
         uses: lukka/get-cmake@latest
         with:
           cmakeVersion: '~4.1.0'
+          useCloudCache: false
+          useLocalCache: true
+
+      - name: Cache lint dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            cpp/build/compile_commands.json
+            ~/.cache/clang-tidy
+          key: lint-deps-${{ hashFiles('cpp/**/*.cpp', 'cpp/**/*.hpp', 'cpp/CMakeLists.txt') }}
+          restore-keys: |
+            lint-deps-
 
       - name: Install clang-tidy
         run: |
           sudo apt update
-          sudo apt install -y clang-tidy cmake build-essential
+          sudo apt install -y clang-tidy build-essential
 
-      - name: Configure CMake
+      - name: Configure CMake (minimal for lint)
         run: |
-          cmake -S cpp -B cpp/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          # Only generate compile_commands.json, skip full configuration
+          if [ ! -f cpp/build/compile_commands.json ]; then
+            cmake -S cpp -B cpp/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DBUILD_TESTS=OFF
+          fi
 
       - name: Run clang-tidy and generate report
         run: |
@@ -407,10 +452,33 @@ jobs:
         if: needs.check-trigger.outputs.trigger_source == 'manual'
         uses: actions/checkout@v4
 
-      - name: Setup CMake
+      - name: Check if CMake already available
+        id: check-cmake
+        run: |
+          if command -v cmake &> /dev/null && cmake --version | grep -q "4\.[1-9]"; then
+            echo "cmake_available=true" >> $GITHUB_OUTPUT
+            echo "Using system CMake: $(cmake --version)"
+          else
+            echo "cmake_available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup CMake (only if needed)
+        if: steps.check-cmake.outputs.cmake_available != 'true'
         uses: lukka/get-cmake@latest
         with:
           cmakeVersion: '~4.1.0'
+          useCloudCache: false
+          useLocalCache: true
+
+      - name: Cache coverage build
+        uses: actions/cache@v4
+        with:
+          path: |
+            cpp/build-coverage
+            ~/.cache/lcov
+          key: coverage-${{ hashFiles('cpp/CMakeLists.txt', 'cpp/**/CMakeLists.txt') }}
+          restore-keys: |
+            coverage-
 
       - name: Install lcov
         run: |
