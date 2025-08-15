@@ -16,7 +16,7 @@ target_compile_features(algorithms_tests PUBLIC cxx_std_23)
 
 if(MSVC)
   # Ensure MSVC interprets source files as UTF-8 so Japanese test names compile correctly
-  target_compile_options(algorithms_tests PRIVATE "/source-charset:utf-8")
+  target_compile_options(algorithms_tests PRIVATE "/source-charset:utf-8" "/execution-charset:utf-8")
 endif()
 
 enable_testing()

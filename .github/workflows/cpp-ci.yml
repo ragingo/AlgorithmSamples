@@ -35,8 +35,13 @@ jobs:
 
       - name: Run tests
         run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            # Windows でコードページを UTF-8 に設定
+            chcp 65001
+          fi
           cd cpp/build
           ctest -C Release --output-on-failure
+        shell: bash
         env:
           # Windows での UTF-8 出力を確実にする
           PYTHONIOENCODING: utf-8
