@@ -1,25 +1,142 @@
-name: "[cpp] CI"
+name: "[cpp] CI (Manual & Comment-driven)"
+
+# Automatic triggers disabled to save vCPU time
+# on:
+#   push:
+#     branches: [ main ]
+#     paths:
+#       - 'cpp/**'
+#       - '.github/workflows/cpp-ci.yml'
+#   pull_request:
+#     branches: [ main ]
+#     paths:
+#       - 'cpp/**'
+#       - '.github/workflows/cpp-ci.yml'
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'cpp/**'
-      - '.github/workflows/cpp-ci.yml'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'cpp/**'
-      - '.github/workflows/cpp-ci.yml'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Which jobs to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'build'
+          - 'lint'
+          - 'format'
+          - 'coverage'
+      reason:
+        description: 'Reason for manual execution'
+        required: false
+        default: 'Manual testing'
+  issue_comment:
+    types: [created]
 
 jobs:
+  check-trigger:
+    name: "Check Trigger"
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+      should_lint: ${{ steps.check.outputs.should_lint }}
+      should_format: ${{ steps.check.outputs.should_format }}
+      should_coverage: ${{ steps.check.outputs.should_coverage }}
+      trigger_source: ${{ steps.check.outputs.trigger_source }}
+    steps:
+      - name: Check trigger source
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            let should_build = false;
+            let should_lint = false;
+            let should_format = false;
+            let should_coverage = false;
+            let trigger_source = 'unknown';
+
+            if (context.eventName === 'workflow_dispatch') {
+              trigger_source = 'manual';
+              const target = context.payload.inputs.target;
+              console.log(`Manual trigger with target: ${target}`);
+
+              should_build = target === 'all' || target === 'build';
+              should_lint = target === 'all' || target === 'lint';
+              should_format = target === 'all' || target === 'format';
+              should_coverage = target === 'all' || target === 'coverage';
+            } else if (context.eventName === 'issue_comment' && context.payload.issue.pull_request) {
+              trigger_source = 'comment';
+              const comment = context.payload.comment.body.toLowerCase().trim();
+              const botMentions = ['@github-actions', '@github-actions[bot]', '/ci'];
+
+              let mentioned = false;
+              for (const mention of botMentions) {
+                if (comment.includes(mention)) {
+                  mentioned = true;
+                  break;
+                }
+              }
+
+              if (mentioned) {
+                should_build = comment.includes('build') || comment.includes('ci_all');
+                should_lint = comment.includes('lint') || comment.includes('ci_all');
+                should_format = comment.includes('format') || comment.includes('ci_all');
+                should_coverage = comment.includes('coverage') || comment.includes('ci_all');
+
+                console.log(`Comment trigger detected: build=${should_build}, lint=${should_lint}, format=${should_format}, coverage=${should_coverage}`);
+
+                // React to comment
+                if (should_build || should_lint || should_format || should_coverage) {
+                  await github.rest.reactions.createForIssueComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: context.payload.comment.id,
+                    content: 'rocket'
+                  });
+                }
+              }
+            }
+
+            core.setOutput('should_build', should_build);
+            core.setOutput('should_lint', should_lint);
+            core.setOutput('should_format', should_format);
+            core.setOutput('should_coverage', should_coverage);
+            core.setOutput('trigger_source', trigger_source);
+
   cpp-build-and-test:
+    name: "[cpp] Build & Test"
     runs-on: ${{ matrix.os }}
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should_build == 'true'
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-      - name: Checkout
+      - name: Get PR branch (for comment trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'comment'
+        uses: actions/github-script@v7
+        id: get-pr
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            return {
+              ref: pr.head.ref,
+              sha: pr.head.sha
+            };
+
+      - name: Checkout (comment trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'comment'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJson(steps.get-pr.outputs.result).ref }}
+
+      - name: Checkout (manual trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'manual'
         uses: actions/checkout@v4
 
       - name: Setup CMake
@@ -56,11 +173,53 @@ jobs:
           name: test-results-${{ matrix.os }}
           path: cpp/build/Testing/Temporary/LastTest.log
 
+      - name: Comment build result (for comment trigger)
+        if: always() && needs.check-trigger.outputs.trigger_source == 'comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobStatus = '${{ job.status }}';
+            const os = '${{ matrix.os }}';
+            const emoji = jobStatus === 'success' ? '✅' : '❌';
+            const body = `${emoji} **Build & Test (${os})**: ${jobStatus}`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+
   cpp-format-check:
     name: "[cpp] Format Check"
     runs-on: ubuntu-latest
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should_format == 'true'
     steps:
-      - name: Checkout
+      - name: Get PR branch (for comment trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'comment'
+        uses: actions/github-script@v7
+        id: get-pr
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            return {
+              ref: pr.head.ref,
+              sha: pr.head.sha
+            };
+
+      - name: Checkout (comment trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'comment'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJson(steps.get-pr.outputs.result).ref }}
+
+      - name: Checkout (manual trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'manual'
         uses: actions/checkout@v4
 
       - name: Install clang-format
@@ -71,14 +230,135 @@ jobs:
       - name: Check format
         run: |
           cd cpp
-          bash scripts/check-format.sh
+          bash scripts/check-format.sh > ../format_output.txt 2>&1 || true
+
+      - name: Comment format result (for comment trigger)
+        if: always() && needs.check-trigger.outputs.trigger_source == 'comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const formatOutput = fs.readFileSync('./format_output.txt', 'utf8');
+            const success = !formatOutput.includes('Error') && !formatOutput.includes('would be reformatted');
+
+            const emoji = success ? '✅' : '❌';
+            const status = success ? 'All files are properly formatted' : 'Format issues found';
+
+            let body = `${emoji} **Format Check**: ${status}`;
+
+            if (!success) {
+              body += '\n\n```\n' + formatOutput.trim() + '\n```';
+              body += '\n\n💡 Run `bash cpp/scripts/format.sh` to fix formatting issues.';
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+
+  cpp-lint:
+    name: "[cpp] Lint Check"
+    runs-on: ubuntu-latest
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should_lint == 'true'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Get PR branch (for comment trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'comment'
+        uses: actions/github-script@v7
+        id: get-pr
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            return {
+              ref: pr.head.ref,
+              sha: pr.head.sha
+            };
+
+      - name: Checkout (comment trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'comment'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJson(steps.get-pr.outputs.result).ref }}
+
+      - name: Checkout (manual trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'manual'
+        uses: actions/checkout@v4
+
+      - name: Install clang-tidy
+        run: |
+          sudo apt update
+          sudo apt install -y clang-tidy cmake build-essential
+
+      - name: Configure CMake
+        run: |
+          cmake -S cpp -B cpp/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Run clang-tidy and generate report
+        run: |
+          chmod +x cpp/scripts/lint.sh cpp/scripts/lint-pr.sh
+          cd cpp && ../cpp/scripts/lint-pr.sh
+
+      - name: Comment lint results
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = './cpp/pr_lint_summary.md';
+
+            if (fs.existsSync(path)) {
+              const comment = fs.readFileSync(path, 'utf8');
+
+              if (context.eventName === 'issue_comment') {
+                // For comment trigger, just create a new comment
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: comment
+                });
+              }
+            }
 
   cpp-coverage:
-    name: "[cpp] Coverage (Linux)"
+    name: "[cpp] Coverage"
     runs-on: ubuntu-latest
-    needs: cpp-build-and-test
+    needs: check-trigger
+    if: needs.check-trigger.outputs.should_coverage == 'true'
     steps:
-      - name: Checkout
+      - name: Get PR branch (for comment trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'comment'
+        uses: actions/github-script@v7
+        id: get-pr
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            return {
+              ref: pr.head.ref,
+              sha: pr.head.sha
+            };
+
+      - name: Checkout (comment trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'comment'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJson(steps.get-pr.outputs.result).ref }}
+
+      - name: Checkout (manual trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'manual'
         uses: actions/checkout@v4
 
       - name: Setup CMake
@@ -107,7 +387,29 @@ jobs:
         run: |
           lcov --capture --directory cpp/build-coverage --output-file coverage.info --ignore-errors source,gcov || true
           lcov --remove coverage.info '/usr/*' '*/_deps/*' '*/tests/*' --output-file coverage.info --ignore-errors empty || true
-          lcov --list coverage.info --ignore-errors empty || true
+
+          # Get coverage percentage
+          COVERAGE=$(lcov --summary coverage.info 2>/dev/null | grep "lines" | grep -o '[0-9.]*%' || echo "0%")
+          echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
+
+      - name: Comment coverage result (for comment trigger)
+        if: always() && needs.check-trigger.outputs.trigger_source == 'comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const coverage = process.env.COVERAGE;
+            const emoji = parseFloat(coverage) >= 80 ? '✅' : '⚠️';
+
+            const body = `${emoji} **Coverage**: ${coverage}
+
+            📊 Code coverage analysis completed. ${parseFloat(coverage) >= 80 ? 'Great coverage!' : 'Consider adding more tests.'}`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
