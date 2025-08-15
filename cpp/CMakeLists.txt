@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 4.00)
 
 project(algorithm_samples)
 
+# Windows での UTF-8 対応
+if(MSVC)
+    add_compile_options(/source-charset:utf-8)
+endif()
+
 add_library(algorithm_samples_headers INTERFACE)
 target_include_directories(algorithm_samples_headers INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
