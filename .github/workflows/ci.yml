@@ -25,7 +25,7 @@ jobs:
         run: cmake -S cpp -B cpp/build -DBUILD_TESTS=ON
 
       - name: Build
-        run: cmake --build cpp/build --config Release --target ALL_BUILD -j 4
+        run: cmake --build cpp/build --config Release -j 4
 
       - name: Run tests
         run: |
@@ -79,7 +79,7 @@ jobs:
           cmake -S cpp -B cpp/build-coverage -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage" -DCMAKE_C_FLAGS="--coverage"
 
       - name: Build tests
-        run: cmake --build cpp/build-coverage --config Debug --target ALL_BUILD -j 4
+        run: cmake --build cpp/build-coverage --config Debug -j 4
 
       - name: Run tests (coverage)
         run: |
