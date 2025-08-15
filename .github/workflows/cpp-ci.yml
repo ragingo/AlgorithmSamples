@@ -154,7 +154,7 @@ jobs:
       - name: Setup CMake
         uses: lukka/get-cmake@latest
         with:
-          cmakeVersion: '4.0.0'
+          cmakeVersion: '~4.1.0'
 
       - name: Configure
         run: cmake -S cpp -B cpp/build -DBUILD_TESTS=ON
@@ -334,6 +334,11 @@ jobs:
         if: needs.check-trigger.outputs.trigger_source == 'manual'
         uses: actions/checkout@v4
 
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: '~4.1.0'
+
       - name: Install clang-tidy
         run: |
           sudo apt update
@@ -405,7 +410,7 @@ jobs:
       - name: Setup CMake
         uses: lukka/get-cmake@latest
         with:
-          cmakeVersion: '4.0.0'
+          cmakeVersion: '~4.1.0'
 
       - name: Install lcov
         run: |
