@@ -138,17 +138,86 @@ Randomness seeded to: 1670134069
 All tests passed (4 assertions in 4 test cases)
 ```
 
-## 📂 プロジェクト構造
+## � コード品質チェック (Linter)
+
+このプロジェクトでは `clang-tidy` を使用してコードの静的解析を行っています。
+
+### 前提条件
+
+clang-tidyのインストールが必要です：
+
+- **Windows**: LLVM/Clangツールチェーンをインストール
+- **Ubuntu**: `sudo apt install clang-tidy`
+- **macOS**: `brew install llvm`
+
+### リンターの実行
+
+#### コマンドラインから実行
+
+```bash
+# プロジェクトルートで実行
+./cpp/scripts/lint.sh
+
+# CI用（詳細なレポート付き）
+./cpp/scripts/lint-ci.sh
+```
+
+#### VSCodeタスクから実行
+
+VSCodeで `Ctrl+Shift+P` を押して "Tasks: Run Task" を選択し、 `[cpp] Run clang-tidy` を実行してください。
+
+#### CI/CD
+
+このプロジェクトでは、**コメント駆動CI**を採用してvCPU時間を節約しています。PRコメントで特定のキーワードを投稿することで、必要なチェックのみを実行できます。
+
+**使用方法:**
+- `@github-actions build` - ビルド・テスト実行
+- `@github-actions lint` - コード品質チェック
+- `@github-actions format` - フォーマットチェック  
+- `@github-actions coverage` - カバレッジ測定
+- `@github-actions ci_all` - 全てのチェック実行
+
+または `/ci` でも反応します：
+- `/ci build`
+- `/ci lint`
+- `/ci format`
+- `/ci coverage` 
+- `/ci ci_all`
+
+**自動実行の有効化:**
+vCPU時間を気にしない場合は、`.github/workflows/cpp-ci.yml`のコメントアウトを解除し、`.github/workflows/cpp-ci-comment.yml`を無効化することで従来の自動CI実行に戻せます。
+
+### 設定ファイル
+
+- `.clang-tidy`: clang-tidyの設定ファイル
+  - アルゴリズム学習プロジェクトに適したルールセットを定義
+  - 厳しすぎるルールは無効化し、学習に集中できる設定
+
+### リンターチェック項目
+
+- **モダンC++の推奨事項**: C++の最新機能の適切な使用
+- **パフォーマンス**: パフォーマンス上の問題の検出
+- **バグ検出**: 潜在的なバグやメモリリークの検出
+- **可読性**: コードの可読性向上のための提案
+- **セキュリティ**: セキュリティ上の問題の検出
+
+## �📂 プロジェクト構造
 
 ```
 cpp/
 ├── CMakeLists.txt          # メインのCMake設定
 ├── README.md              # このファイル
+├── .clang-tidy            # clang-tidyの設定ファイル
 ├── main.cpp               # ランナーアプリケーションのメイン
 ├── demo_registry.hpp      # デモ登録システムのヘッダー
 ├── demos/                 # デモの実装
 │   └── sort/
 │       └── bubble_sort.cpp
+├── scripts/               # ビルド・開発用スクリプト
+│   ├── format.sh          # コードフォーマッター実行
+│   ├── check-format.sh    # フォーマットチェック
+│   ├── add-bom.sh         # BOM追加
+│   └── lint.sh            # clang-tidy実行 (新規追加)
 ├── sort/                  # アルゴリズムのヘッダー
 │   └── bubble_sort.hpp
 ├── tests/                 # テストコード
@@ -229,4 +298,3 @@ TEST_CASE("新アルゴリズム - 基本テスト") {
 cmake --build cpp/build --config Release
 ./cpp/build/Release/algorithms_runner
 ```
-
