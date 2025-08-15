@@ -396,7 +396,7 @@ jobs:
       - name: Run clang-tidy and generate report
         run: |
           chmod +x cpp/scripts/lint.sh cpp/scripts/lint-pr.sh
-          cd cpp && ../cpp/scripts/lint-pr.sh
+          cd cpp && bash scripts/lint-pr.sh
 
       - name: Comment lint results
         if: always()
