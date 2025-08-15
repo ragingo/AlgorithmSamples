@@ -26,10 +26,9 @@ while IFS= read -r file; do
     # UTF-8 BOMを追加 (既にある場合は重複を避ける)
     first_bytes=$(head -c 3 "$file" | od -An -tx1 | tr -d ' ')
     if [ "$first_bytes" != "efbbbf" ]; then
-        # BOMを追加
-        printf '\xef\xbb\xbf' > "${file}.tmp"
-        cat "$file" >> "${file}.tmp"
-        mv "${file}.tmp" "$file"
+        # BOMを追加 (より確実な方法)
+        (printf '\xef\xbb\xbf'; cat "$file") > "${file}.new"
+        mv "${file}.new" "$file"
         echo "    ✅ Added BOM"
     else
         echo "    ℹ️  BOM already present"
