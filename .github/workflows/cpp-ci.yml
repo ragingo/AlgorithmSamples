@@ -20,6 +20,11 @@ permissions:
 #       - '.github/workflows/cpp-ci.yml'
 
 on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'cpp/**'
+      - '.github/workflows/cpp-ci.yml'
   workflow_dispatch:
     inputs:
       target:
@@ -56,10 +61,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            console.log('=== WORKFLOW DEBUG START ===');
-            console.log(`Event name: ${context.eventName}`);
-            console.log(`Action: ${context.payload.action}`);
-
             let should_build = false;
             let should_lint = false;
             let should_format = false;
@@ -69,68 +70,45 @@ jobs:
             if (context.eventName === 'workflow_dispatch') {
               trigger_source = 'manual';
               const target = context.payload.inputs.target;
-              console.log(`Manual trigger with target: ${target}`);
-
               should_build = target === 'all' || target === 'build';
               should_lint = target === 'all' || target === 'lint';
               should_format = target === 'all' || target === 'format';
               should_coverage = target === 'all' || target === 'coverage';
-            } else if (context.eventName === 'issue_comment') {
-              console.log('Issue comment event detected');
-              console.log(`Has pull_request: ${!!context.payload.issue.pull_request}`);
+            } else if (context.eventName === 'pull_request') {
+              trigger_source = 'pull_request';
+              // PR作成時は軽量チェックのみ
+              should_lint = true;
+              should_format = true;
+            } else if (context.eventName === 'issue_comment' && context.payload.issue.pull_request) {
+              trigger_source = 'comment';
+              const comment = context.payload.comment.body.toLowerCase().trim();
+              const botMentions = ['@github-actions', '@github-actions[bot]', '/ci'];
 
-              if (context.payload.issue.pull_request) {
-                trigger_source = 'comment';
-                const comment = context.payload.comment.body.toLowerCase().trim();
-                console.log(`Comment body: "${comment}"`);
-
-                const botMentions = ['@github-actions', '@github-actions[bot]', '/ci'];
-
-                let mentioned = false;
-                for (const mention of botMentions) {
-                  console.log(`Checking mention: "${mention}"`);
-                  if (comment.includes(mention)) {
-                    mentioned = true;
-                    console.log(`✅ Found mention: "${mention}"`);
-                    break;
-                  }
+              let mentioned = false;
+              for (const mention of botMentions) {
+                if (comment.includes(mention)) {
+                  mentioned = true;
+                  break;
                 }
+              }
 
-                console.log(`Mentioned: ${mentioned}`);
+              if (mentioned) {
+                should_build = comment.includes('build') || comment.includes('ci_all');
+                should_lint = comment.includes('lint') || comment.includes('ci_all');
+                should_format = comment.includes('format') || comment.includes('ci_all');
+                should_coverage = comment.includes('coverage') || comment.includes('ci_all');
 
-                if (mentioned) {
-                  should_build = comment.includes('build') || comment.includes('ci_all');
-                  should_lint = comment.includes('lint') || comment.includes('ci_all');
-                  should_format = comment.includes('format') || comment.includes('ci_all');
-                  should_coverage = comment.includes('coverage') || comment.includes('ci_all');
-
-                  console.log(`Parsed commands: build=${should_build}, lint=${should_lint}, format=${should_format}, coverage=${should_coverage}`);
-
-                  // React to comment
-                  if (should_build || should_lint || should_format || should_coverage) {
-                    console.log('🚀 Adding rocket reaction');
-                    await github.rest.reactions.createForIssueComment({
-                      owner: context.repo.owner,
-                      repo: context.repo.repo,
-                      comment_id: context.payload.comment.id,
-                      content: 'rocket'
-                    });
-                  }
-                } else {
-                  console.log('❌ No bot mention found');
+                // コメントに🚀リアクション
+                if (should_build || should_lint || should_format || should_coverage) {
+                  await github.rest.reactions.createForIssueComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: context.payload.comment.id,
+                    content: 'rocket'
+                  });
                 }
-              } else {
-                console.log('❌ Not a pull request comment');
               }
             }
-
-            console.log('=== FINAL OUTPUTS ===');
-            console.log(`should_build: ${should_build}`);
-            console.log(`should_lint: ${should_lint}`);
-            console.log(`should_format: ${should_format}`);
-            console.log(`should_coverage: ${should_coverage}`);
-            console.log(`trigger_source: ${trigger_source}`);
-            console.log('=== WORKFLOW DEBUG END ===');
 
             core.setOutput('should_build', should_build);
             core.setOutput('should_lint', should_lint);
@@ -207,21 +185,50 @@ jobs:
           name: test-results-${{ matrix.os }}
           path: cpp/build/Testing/Temporary/LastTest.log
 
-      - name: Comment build result (for comment trigger)
-        if: always() && needs.check-trigger.outputs.trigger_source == 'comment'
+  report-build-results:
+    name: "Report Build Results"
+    runs-on: ubuntu-latest
+    needs: [check-trigger, cpp-build-and-test]
+    if: always() && needs.check-trigger.outputs.should_build == 'true' && needs.check-trigger.outputs.trigger_source == 'comment'
+    steps:
+      - name: Comment build results summary
         uses: actions/github-script@v7
         with:
           script: |
-            const jobStatus = '${{ job.status }}';
-            const os = '${{ matrix.os }}';
-            const emoji = jobStatus === 'success' ? '✅' : '❌';
-            const body = `${emoji} **Build & Test (${os})**: ${jobStatus}`;
+            const buildJobs = ${{ toJson(needs.cpp-build-and-test) }};
+            const results = buildJobs.result;
+
+            let summary = '## 🏗️ Build & Test Results\n\n';
+
+            const platforms = ['ubuntu-latest', 'windows-latest', 'macos-latest'];
+            const platformNames = {
+              'ubuntu-latest': 'Ubuntu',
+              'windows-latest': 'Windows',
+              'macos-latest': 'macOS'
+            };
+
+            let allSuccess = true;
+
+            for (const platform of platforms) {
+              const emoji = results === 'success' ? '✅' : '❌';
+              const status = results === 'success' ? 'Success' : 'Failed';
+              summary += `- ${emoji} **${platformNames[platform]}**: ${status}\n`;
+
+              if (results !== 'success') {
+                allSuccess = false;
+              }
+            }
+
+            summary += '\n';
+            summary += allSuccess ?
+              '🎉 All platforms built and tested successfully!' :
+              '⚠️ Some builds failed. Please check the workflow logs for details.';
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: body
+              body: summary
             });
 
   cpp-format-check:
