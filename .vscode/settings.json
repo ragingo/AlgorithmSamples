@@ -1,4 +1,43 @@
 {
+  // 文字コード設定
+  "files.encoding": "utf8bom",
+  "files.autoGuessEncoding": true,
+  "files.defaultLanguage": "cpp",
+
+  // 改行コード設定
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.trimTrailingWhitespace": true,
+
+  // C++ 固有設定
+  "[cpp]": {
+    "files.encoding": "utf8bom",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "editor.detectIndentation": false
+  },
+  "[c]": {
+    "files.encoding": "utf8bom",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "editor.detectIndentation": false
+  },
+
+  // シェルスクリプト設定 (BOM無し)
+  "[shellscript]": {
+    "files.encoding": "utf8",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.detectIndentation": false
+  },
+  "[bash]": {
+    "files.encoding": "utf8",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.detectIndentation": false
+  },
+
   "files.associations": {
     "algorithm": "cpp",
     "array": "cpp",
