@@ -3,6 +3,7 @@
 #include <iterator>
 #include <type_traits>
 #include <utility>
+#include <cstdio>
 
 template <typename Iterator, typename Comparator = std::less<>>
 void bubble_sort(Iterator begin, Iterator end, Comparator comparator = {}) {
