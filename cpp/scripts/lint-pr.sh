@@ -39,32 +39,67 @@ echo "" >> pr_lint_summary.md
 if [ "$WARNING_COUNT" -gt 0 ]; then
     echo "Found **$WARNING_COUNT** code style/quality issues:" >> pr_lint_summary.md
     echo "" >> pr_lint_summary.md
-    echo "### Issues by File:" >> pr_lint_summary.md
-    echo "" >> pr_lint_summary.md
 
-    # Group warnings by file
+    # Group by issue type and show most common issues
+    echo "### 📊 Most Common Issues:" >> pr_lint_summary.md
+    echo "" >> pr_lint_summary.md
+    echo "| ルール | 件数 | 説明 |" >> pr_lint_summary.md
+    echo "|--------|------|------|" >> pr_lint_summary.md
+
     grep "LINT_WARNING:" lint_warnings.txt | sed 's/LINT_WARNING: //' | \
-        cut -d: -f1 | sort | uniq -c | \
-        while read count file; do
-            echo "- **$file**: $count issue(s)" >> pr_lint_summary.md
+        sed -E 's/.*\[([^]]*)\]$/\1/' | sort | uniq -c | sort -nr | head -5 | \
+        while read count rule; do
+            case "$rule" in
+                "readability-identifier-length")
+                    description="変数名が短すぎます (3文字以上推奨)"
+                    ;;
+                "modernize-use-trailing-return-type")
+                    description="戻り値の型を後置にすることを推奨"
+                    ;;
+                "readability-identifier-naming")
+                    description="変数名の命名規則に従っていません"
+                    ;;
+                "bugprone-easily-swappable-parameters")
+                    description="引数の順序を間違えやすい構造です"
+                    ;;
+                "readability-function-size")
+                    description="関数が大きすぎます"
+                    ;;
+                *)
+                    description="コード品質の改善が必要です"
+                    ;;
+            esac
+            echo "| \`$rule\` | $count | $description |" >> pr_lint_summary.md
         done
 
     echo "" >> pr_lint_summary.md
-    echo "### Sample Issues:" >> pr_lint_summary.md
+    echo "### 📝 Detailed Issues:" >> pr_lint_summary.md
     echo "" >> pr_lint_summary.md
+    echo "| ファイル | 行 | 問題の説明 | ルール |" >> pr_lint_summary.md
+    echo "|----------|----|-----------|---------| " >> pr_lint_summary.md
 
-    # Show first few warnings
-    grep "LINT_WARNING:" lint_warnings.txt | sed 's/LINT_WARNING: //' | head -5 | \
-        while IFS= read -r warning; do
-            echo "- \`$warning\`" >> pr_lint_summary.md
+    # Process warnings and format as table rows
+    grep "LINT_WARNING:" lint_warnings.txt | sed 's/LINT_WARNING: //' | \
+        sed -E 's|^.*[/\\]([^/\\]+):([0-9]+):[0-9]+: warning: (.*) \[([^]]*)\]$|\1\t\2\t\3\t\4|' | \
+        sort -u | head -10 | \
+        while IFS=$'\t' read -r file line message rule; do
+            echo "| \`$file\` | $line | $message | \`$rule\` |" >> pr_lint_summary.md
         done
 
-    if [ "$WARNING_COUNT" -gt 5 ]; then
-        echo "- ... and $((WARNING_COUNT - 5)) more issues" >> pr_lint_summary.md
+    if [ "$WARNING_COUNT" -gt 10 ]; then
+        echo "... and **$((WARNING_COUNT - 10))** more issues" >> pr_lint_summary.md
+        echo "" >> pr_lint_summary.md
     fi
 
+    echo "### 💡 Quick Fixes:" >> pr_lint_summary.md
     echo "" >> pr_lint_summary.md
-    echo "💡 **Suggestion**: Review the CI logs for detailed information and consider addressing these issues to improve code quality." >> pr_lint_summary.md
+    echo "Common issues and solutions:" >> pr_lint_summary.md
+    echo "- **readability-identifier-length**: Use descriptive variable names (3+ chars)" >> pr_lint_summary.md
+    echo "- **modernize-use-trailing-return-type**: Consider using \`auto function() -> type\` syntax" >> pr_lint_summary.md
+    echo "- **modernize-use-nodiscard**: Add \`[[nodiscard]]\` to functions that return important values" >> pr_lint_summary.md
+    echo "- **readability-function-cognitive-complexity**: Break down complex functions" >> pr_lint_summary.md
+    echo "" >> pr_lint_summary.md
+    echo "💡 **Tip**: Run \`bash cpp/scripts/lint.sh\` locally to see all issues with context." >> pr_lint_summary.md
 else
     echo "🎉 **Great job!** No code style or quality issues found." >> pr_lint_summary.md
 fi
