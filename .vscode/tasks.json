@@ -105,23 +105,6 @@
           "cwd": "./cpp/build"
         }
       }
-    },
-    {
-      "label": "[cpp] Convert file encodings",
-      "type": "shell",
-      "command": "./cpp/scripts/convert-encoding.sh",
-      "group": "build",
-      "problemMatcher": [],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "windows": {
-        "command": "bash",
-        "args": ["./cpp/scripts/convert-encoding.sh"],
-        "options": {
-          "cwd": "${workspaceFolder}"
-        }
-      }
     }
   ]
 }
