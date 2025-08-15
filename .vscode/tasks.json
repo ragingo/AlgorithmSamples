@@ -1,0 +1,110 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "[cpp] CMake: Configure",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["-S", "cpp", "-B", "cpp/build"],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "[cpp] CMake: Build (Release)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "cpp/build", "--config", "Release", "--target", "ALL_BUILD", "-j", "6"],
+      "group": "build",
+      "problemMatcher": ["$msCompile"]
+    },
+    {
+      "label": "[cpp] CMake: Clean",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "cpp/build", "--target", "clean"],
+      "problemMatcher": []
+    },
+    {
+      "label": "[cpp] Run algorithms_runner",
+      "type": "shell",
+      "command": "./cpp/build/algorithms_runner",
+      "group": "test",
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "windows": {
+        "command": "./cpp/build/Release/algorithms_runner.exe",
+        "options": {
+          "cwd": "${workspaceFolder}"
+        }
+      }
+    },
+    {
+      "label": "[cpp] Run algorithms_tests",
+      "type": "shell",
+      "command": "./cpp/build/tests/algorithms_tests",
+      "group": "test",
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "windows": {
+        "command": "./cpp/build/tests/Release/algorithms_tests.exe",
+        "options": {
+          "cwd": "${workspaceFolder}"
+        }
+      }
+    },
+    {
+      "label": "[cpp] Format all files",
+      "type": "shell",
+      "command": "./cpp/scripts/format.sh",
+      "group": "build",
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "windows": {
+        "command": "bash",
+        "args": ["./cpp/scripts/format.sh"],
+        "options": {
+          "cwd": "${workspaceFolder}"
+        }
+      }
+    },
+    {
+      "label": "[cpp] Check format",
+      "type": "shell",
+      "command": "./cpp/scripts/check-format.sh",
+      "group": "test",
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "windows": {
+        "command": "bash",
+        "args": ["./cpp/scripts/check-format.sh"],
+        "options": {
+          "cwd": "${workspaceFolder}"
+        }
+      }
+    },
+    {
+      "label": "[cpp] CTest: Run all tests",
+      "type": "shell",
+      "command": "ctest",
+      "args": ["-C", "Release", "--output-on-failure"],
+      "group": "test",
+      "problemMatcher": [],
+      "options": {
+        "cwd": "./cpp/build"
+      },
+      "windows": {
+        "options": {
+          "cwd": "./cpp/build"
+        }
+      }
+    }
+  ]
+}
