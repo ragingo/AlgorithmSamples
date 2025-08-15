@@ -1,0 +1,116 @@
+name: "[cpp] CI"
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'cpp/**'
+      - '.github/workflows/cpp-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'cpp/**'
+      - '.github/workflows/cpp-ci.yml'
+
+jobs:
+  cpp-build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: '4.0.0'
+
+      - name: Configure
+        run: cmake -S cpp -B cpp/build -DBUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build cpp/build --config Release -j 4
+
+      - name: Run tests (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          chcp 65001
+          cd cpp/build
+          ctest -C Release --output-on-failure
+        shell: cmd
+
+      - name: Run tests (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          cd cpp/build
+          ctest -C Release --output-on-failure
+        env:
+          LC_ALL: C.UTF-8
+
+      - name: Upload test results (Linux)
+        if: always() && matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: cpp/build/Testing/Temporary/LastTest.log
+
+  cpp-format-check:
+    name: "[cpp] Format Check"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: |
+          sudo apt update
+          sudo apt install -y clang-format
+
+      - name: Check format
+        run: |
+          cd cpp
+          bash scripts/check-format.sh
+
+  cpp-coverage:
+    name: "[cpp] Coverage (Linux)"
+    runs-on: ubuntu-latest
+    needs: cpp-build-and-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: '4.0.0'
+
+      - name: Install lcov
+        run: |
+          sudo apt update
+          sudo apt install -y lcov
+
+      - name: Configure with coverage flags
+        run: |
+          cmake -S cpp -B cpp/build-coverage -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage" -DCMAKE_C_FLAGS="--coverage"
+
+      - name: Build tests
+        run: cmake --build cpp/build-coverage --config Debug -j 4
+
+      - name: Run tests (coverage)
+        run: |
+          cd cpp/build-coverage
+          ctest -C Debug --output-on-failure
+
+      - name: Capture coverage
+        run: |
+          lcov --capture --directory cpp/build-coverage --output-file coverage.info --ignore-errors source,gcov || true
+          lcov --remove coverage.info '/usr/*' '*/_deps/*' '*/tests/*' --output-file coverage.info --ignore-errors empty || true
+          lcov --list coverage.info --ignore-errors empty || true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.info
+          fail_ci_if_error: false
