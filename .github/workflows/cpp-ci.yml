@@ -177,16 +177,16 @@ jobs:
 
       - name: Run tests (Windows)
         if: matrix.os == 'windows-latest'
+        working-directory: cpp/build
         run: |
           chcp 65001
-          cd cpp/build
           ctest -C Release --output-on-failure
         shell: cmd
 
       - name: Run tests (Unix)
         if: matrix.os != 'windows-latest'
+        working-directory: cpp/build
         run: |
-          cd cpp/build
           ctest -C Release --output-on-failure
         env:
           LC_ALL: C.UTF-8
@@ -288,8 +288,8 @@ jobs:
           sudo apt install -y clang-format
 
       - name: Check format
+        working-directory: cpp
         run: |
-          cd cpp
           bash scripts/check-format.sh > ../format_output.txt 2>&1 || true
 
       - name: Comment format result (for comment trigger)
@@ -394,9 +394,9 @@ jobs:
           fi
 
       - name: Run clang-tidy and generate report
+        working-directory: cpp
         run: |
-          chmod +x cpp/scripts/lint.sh cpp/scripts/lint-pr.sh
-          cd cpp && bash scripts/lint-pr.sh
+          bash scripts/lint-pr.sh
 
       - name: Comment lint results
         if: always()
@@ -493,8 +493,8 @@ jobs:
         run: cmake --build cpp/build-coverage --config Debug -j 4
 
       - name: Run tests (coverage)
+        working-directory: cpp/build-coverage
         run: |
-          cd cpp/build-coverage
           ctest -C Debug --output-on-failure
 
       - name: Capture coverage
