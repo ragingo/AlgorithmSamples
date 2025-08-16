@@ -284,10 +284,34 @@ jobs:
         if: needs.check-trigger.outputs.trigger_source == 'pull_request'
         uses: actions/checkout@v4
 
-      - name: Install clang-format
+      - name: Cache APT packages (safe)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/apt-archives
+          key: apt-cache-${{ runner.os }}-clang-format
+          restore-keys: |
+            apt-cache-${{ runner.os }}-
+
+      - name: Install clang-format (with optimizations)
         run: |
+          # Create safe cache directory
+          mkdir -p ~/.cache/apt-archives
+
+          # Use touch for simple timestamp cache
+          CACHE_FILE="$HOME/.cache/apt-archives/last_update"
+
+          # Use local cache if available and recent (1 hour = 60 minutes)
+          if [ -f "$CACHE_FILE" ] && [ "$(find "$CACHE_FILE" -mmin -60 2>/dev/null)" ]; then
+            echo "Using cached package list (updated within last hour)"
+            export DEBIAN_FRONTEND=noninteractive
+            sudo apt install -y --no-install-recommends clang-format
+            exit 0
+          fi
+
+          # Update and record timestamp
           sudo apt update
-          sudo apt install -y clang-format
+          touch "$CACHE_FILE"
+          sudo apt install -y --no-install-recommends clang-format
 
       - name: Check format
         working-directory: cpp
@@ -383,10 +407,34 @@ jobs:
           path: cpp/build/compile_commands.json
           key: compile-commands-${{ hashFiles('cpp/**/*.cpp', 'cpp/**/*.hpp', 'cpp/CMakeLists.txt') }}
 
-      - name: Install clang-tidy
+      - name: Cache APT packages (safe)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/apt-archives
+          key: apt-cache-${{ runner.os }}-clang-tidy
+          restore-keys: |
+            apt-cache-${{ runner.os }}-
+
+      - name: Install clang-tidy (with optimizations)
         run: |
+          # Create safe cache directory
+          mkdir -p ~/.cache/apt-archives
+
+          # Use touch for simple timestamp cache
+          CACHE_FILE="$HOME/.cache/apt-archives/last_update"
+
+          # Use local cache if available and recent (1 hour = 60 minutes)
+          if [ -f "$CACHE_FILE" ] && [ "$(find "$CACHE_FILE" -mmin -60 2>/dev/null)" ]; then
+            echo "Using cached package list (updated within last hour)"
+            export DEBIAN_FRONTEND=noninteractive
+            sudo apt install -y --no-install-recommends clang-tidy build-essential
+            exit 0
+          fi
+
+          # Update and record timestamp
           sudo apt update
-          sudo apt install -y clang-tidy build-essential
+          touch "$CACHE_FILE"
+          sudo apt install -y --no-install-recommends clang-tidy build-essential
 
       - name: Configure CMake (minimal for lint)
         run: |
@@ -494,10 +542,34 @@ jobs:
           restore-keys: |
             coverage-
 
-      - name: Install lcov
+      - name: Cache APT packages (safe)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/apt-archives
+          key: apt-cache-${{ runner.os }}-lcov
+          restore-keys: |
+            apt-cache-${{ runner.os }}-
+
+      - name: Install lcov (with optimizations)
         run: |
+          # Create safe cache directory
+          mkdir -p ~/.cache/apt-archives
+
+          # Use touch for simple timestamp cache
+          CACHE_FILE="$HOME/.cache/apt-archives/last_update"
+
+          # Use local cache if available and recent (1 hour = 60 minutes)
+          if [ -f "$CACHE_FILE" ] && [ "$(find "$CACHE_FILE" -mmin -60 2>/dev/null)" ]; then
+            echo "Using cached package list (updated within last hour)"
+            export DEBIAN_FRONTEND=noninteractive
+            sudo apt install -y --no-install-recommends lcov
+            exit 0
+          fi
+
+          # Update and record timestamp
           sudo apt update
-          sudo apt install -y lcov
+          touch "$CACHE_FILE"
+          sudo apt install -y --no-install-recommends lcov
 
       - name: Configure with coverage flags
         run: |
