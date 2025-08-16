@@ -10,10 +10,19 @@
       "problemMatcher": []
     },
     {
-      "label": "[cpp] CMake: Build (Release)",
+      "label": "[cpp] CMake: Build",
       "type": "shell",
       "command": "cmake",
-      "args": ["--build", "cpp/build", "--config", "Release", "--target", "ALL_BUILD", "-j", "6"],
+      "args": [
+        "--build",
+        "cpp/build",
+        "--config",
+        "${input:buildConfig}",
+        "--target",
+        "ALL_BUILD",
+        "-j",
+        "6"
+      ],
       "group": "build",
       "problemMatcher": ["$msCompile"]
     },
@@ -122,6 +131,15 @@
           "cwd": "${workspaceFolder}"
         }
       }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "buildConfig",
+      "type": "pickString",
+      "description": "Select the build configuration",
+      "options": ["Debug", "Release"],
+      "default": "Debug"
     }
   ]
 }
