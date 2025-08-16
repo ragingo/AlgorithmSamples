@@ -284,11 +284,13 @@ jobs:
         if: needs.check-trigger.outputs.trigger_source == 'pull_request'
         uses: actions/checkout@v4
 
-      - name: Cache clang-format
+      - name: Cache APT packages
         uses: actions/cache@v4
         with:
-          path: ~/.cache/clang-format
-          key: clang-format-${{ runner.os }}
+          path: /var/cache/apt
+          key: apt-packages-${{ runner.os }}-clang-format
+          restore-keys: |
+            apt-packages-${{ runner.os }}-
 
       - name: Install clang-format
         run: |
@@ -383,15 +385,19 @@ jobs:
           useCloudCache: false
           useLocalCache: true
 
-      - name: Cache lint dependencies
+      - name: Cache compile_commands.json
         uses: actions/cache@v4
         with:
-          path: |
-            cpp/build/compile_commands.json
-            ~/.cache/clang-tidy
-          key: lint-deps-${{ hashFiles('cpp/**/*.cpp', 'cpp/**/*.hpp', 'cpp/CMakeLists.txt') }}
+          path: cpp/build/compile_commands.json
+          key: compile-commands-${{ hashFiles('cpp/**/*.cpp', 'cpp/**/*.hpp', 'cpp/CMakeLists.txt') }}
+
+      - name: Cache APT packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt
+          key: apt-packages-${{ runner.os }}-clang-tidy
           restore-keys: |
-            lint-deps-
+            apt-packages-${{ runner.os }}-
 
       - name: Install clang-tidy
         run: |
