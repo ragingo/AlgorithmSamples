@@ -151,6 +151,10 @@ jobs:
         if: needs.check-trigger.outputs.trigger_source == 'manual'
         uses: actions/checkout@v4
 
+      - name: Checkout (PR trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'pull_request'
+        uses: actions/checkout@v4
+
       - name: Setup CMake (with cache)
         id: cmake
         uses: lukka/get-cmake@latest
@@ -276,6 +280,10 @@ jobs:
         if: needs.check-trigger.outputs.trigger_source == 'manual'
         uses: actions/checkout@v4
 
+      - name: Checkout (PR trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'pull_request'
+        uses: actions/checkout@v4
+
       - name: Cache clang-format
         uses: actions/cache@v4
         with:
@@ -353,6 +361,10 @@ jobs:
         if: needs.check-trigger.outputs.trigger_source == 'manual'
         uses: actions/checkout@v4
 
+      - name: Checkout (PR trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'pull_request'
+        uses: actions/checkout@v4
+
       - name: Check if CMake already available
         id: check-cmake
         run: |
@@ -417,6 +429,14 @@ jobs:
                   issue_number: context.issue.number,
                   body: comment
                 });
+              } else if (context.eventName === 'pull_request') {
+                // For PR trigger, create comment on the PR
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.payload.pull_request.number,
+                  body: comment
+                });
               }
             }
 
@@ -450,6 +470,10 @@ jobs:
 
       - name: Checkout (manual trigger)
         if: needs.check-trigger.outputs.trigger_source == 'manual'
+        uses: actions/checkout@v4
+
+      - name: Checkout (PR trigger)
+        if: needs.check-trigger.outputs.trigger_source == 'pull_request'
         uses: actions/checkout@v4
 
       - name: Check if CMake already available
