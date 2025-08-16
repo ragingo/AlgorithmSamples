@@ -9,23 +9,18 @@ echo "Generating clang-tidy report for PR..."
 
 cd "$CPP_DIR" || exit 1
 
-# Run clang-tidy and generate structured output
+# Run clang-tidy with all rules on all source files including tests
 find . -path "./build" -prune -o -path "./_deps" -prune -o \
     \( -name "*.cpp" -o -name "*.hpp" -o -name "*.h" \) -type f -print | \
-    while IFS= read -r file; do
-        echo "Analyzing: $file"
-
-        # Run clang-tidy on individual file
-        clang-tidy "$file" \
-            --checks="-*,modernize-*,readability-*,performance-*,bugprone-*,-clang-diagnostic-error" \
+    xargs -I {} -P 6 sh -c '
+        echo "Analyzing: {}"
+        clang-tidy "{}" \
             --extra-arg=-std=c++23 \
             --extra-arg=-I. \
             --format-style=file 2>&1 | \
             grep -E "^.*\.(cpp|hpp|h):[0-9]+:[0-9]+: warning:" | \
-            while IFS= read -r warning; do
-                echo "LINT_WARNING: $warning"
-            done
-    done > lint_warnings.txt
+            sed "s/^/LINT_WARNING: /"
+    ' > lint_warnings.txt
 
 # Count warnings
 WARNING_COUNT=$(grep -c "LINT_WARNING:" lint_warnings.txt || echo "0")
