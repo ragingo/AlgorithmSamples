@@ -284,14 +284,6 @@ jobs:
         if: needs.check-trigger.outputs.trigger_source == 'pull_request'
         uses: actions/checkout@v4
 
-      - name: Cache APT packages
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/apt
-          key: apt-packages-${{ runner.os }}-clang-format
-          restore-keys: |
-            apt-packages-${{ runner.os }}-
-
       - name: Install clang-format
         run: |
           sudo apt update
@@ -390,14 +382,6 @@ jobs:
         with:
           path: cpp/build/compile_commands.json
           key: compile-commands-${{ hashFiles('cpp/**/*.cpp', 'cpp/**/*.hpp', 'cpp/CMakeLists.txt') }}
-
-      - name: Cache APT packages
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/apt
-          key: apt-packages-${{ runner.os }}-clang-tidy
-          restore-keys: |
-            apt-packages-${{ runner.os }}-
 
       - name: Install clang-tidy
         run: |
