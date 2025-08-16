@@ -415,7 +415,7 @@ jobs:
           restore-keys: |
             apt-cache-${{ runner.os }}-
 
-      - name: Install clang-tidy (with optimizations)
+      - name: Install clang-tidy-20 (version-matched)
         run: |
           # Create safe cache directory
           mkdir -p ~/.cache/apt-archives
@@ -427,14 +427,27 @@ jobs:
           if [ -f "$CACHE_FILE" ] && [ "$(find "$CACHE_FILE" -mmin -60 2>/dev/null)" ]; then
             echo "Using cached package list (updated within last hour)"
             export DEBIAN_FRONTEND=noninteractive
-            sudo apt install -y --no-install-recommends clang-tidy build-essential
+
+            # Install LLVM 20 using official repository (non-interactive)
+            wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+            echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-20 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+            sudo apt update -qq
+            sudo apt install -y --no-install-recommends clang-tidy-20 build-essential
+            sudo ln -sf /usr/bin/clang-tidy-20 /usr/bin/clang-tidy
             exit 0
           fi
 
           # Update and record timestamp
           sudo apt update
           touch "$CACHE_FILE"
-          sudo apt install -y --no-install-recommends clang-tidy build-essential
+
+          # Install LLVM 20 using official repository (non-interactive)
+          export DEBIAN_FRONTEND=noninteractive
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          echo "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-20 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+          sudo apt update -qq
+          sudo apt install -y --no-install-recommends clang-tidy-20 build-essential
+          sudo ln -sf /usr/bin/clang-tidy-20 /usr/bin/clang-tidy
 
       - name: Configure CMake (minimal for lint)
         run: |
@@ -442,6 +455,12 @@ jobs:
           if [ ! -f cpp/build/compile_commands.json ]; then
             cmake -S cpp -B cpp/build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DBUILD_TESTS=OFF
           fi
+
+      - name: Verify clang-tidy version
+        run: |
+          echo "CI clang-tidy version:"
+          clang-tidy --version
+          echo "Expected: LLVM version 20.x (matching local environment)"
 
       - name: Run clang-tidy and generate report
         working-directory: cpp
