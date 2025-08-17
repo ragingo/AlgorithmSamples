@@ -36,14 +36,14 @@
     {
       "label": "[cpp] Run algorithms_runner",
       "type": "shell",
-      "command": "./cpp/build/algorithms_runner",
+      "command": "./cpp/build/${input:buildConfig}/algorithms_runner",
       "group": "test",
       "problemMatcher": [],
       "options": {
         "cwd": "${workspaceFolder}"
       },
       "windows": {
-        "command": "./cpp/build/Release/algorithms_runner.exe",
+        "command": "./cpp/build/${input:buildConfig}/algorithms_runner.exe",
         "options": {
           "cwd": "${workspaceFolder}"
         }
@@ -52,14 +52,14 @@
     {
       "label": "[cpp] Run algorithms_tests",
       "type": "shell",
-      "command": "./cpp/build/tests/algorithms_tests",
+      "command": "./cpp/build/tests/${input:buildConfig}/algorithms_tests",
       "group": "test",
       "problemMatcher": [],
       "options": {
         "cwd": "${workspaceFolder}"
       },
       "windows": {
-        "command": "./cpp/build/tests/Release/algorithms_tests.exe",
+        "command": "./cpp/build/tests/${input:buildConfig}/algorithms_tests.exe",
         "options": {
           "cwd": "${workspaceFolder}"
         }
