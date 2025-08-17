@@ -2,27 +2,27 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "[cpp] Debug algorithms_runner (MSVC)",
+      "name": "[cpp] Debug algorithms_runner",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}\\cpp\\build\\Release\\algorithms_runner.exe",
+      "program": "${workspaceFolder}/cpp/build/${command:cmake.buildType}/algorithms_runner",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [],
-      "preLaunchTask": "[cpp] CMake: Build (Release)",
+      "preLaunchTask": "[cpp] CMake: Build",
       "console": "integratedTerminal"
     },
     {
-      "name": "[cpp] Launch algorithms_tests (MSVC)",
+      "name": "[cpp] Launch algorithms_tests",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceFolder}\\cpp\\build\\tests\\Release\\algorithms_tests.exe",
+      "program": "${workspaceFolder}/cpp/build/tests/${command:cmake.buildType}/algorithms_tests",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [],
-      "preLaunchTask": "[cpp] CMake: Build (Release)",
+      "preLaunchTask": "[cpp] CMake: Build",
       "console": "integratedTerminal"
     }
   ]
