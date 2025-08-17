@@ -5,6 +5,7 @@
 #include <functional>
 #include <iostream>
 #include <limits>
+#include <locale>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -32,6 +33,16 @@ DemoFn find_demo(const std::string& name) {
 }
 
 int main(int argc, char** argv) {
+#ifdef _WIN32
+    // Windowsの場合
+    std::locale::global(std::locale("ja-JP"));
+#elif __APPLE__
+    // macOSの場合
+    std::locale::global(std::locale("ja_JP.UTF-8"));
+#else
+    // その他のシステム（Linuxなど）の場合
+    std::locale::global(std::locale("ja_JP.UTF-8"));
+#endif
     auto& demos = list_demos();
 
     if (demos.empty()) {

@@ -1,25 +1,26 @@
 ﻿#pragma once
 #include <cassert>
+#include <concepts>
 #include <iterator>
 #include <type_traits>
 #include <utility>
 
-template <typename Iterator, typename Comparator = std::less<>>
-void bubble_sort(Iterator begin, Iterator end, Comparator comparator = {}) {
+template <std::random_access_iterator Iterator, typename Comparator = std::less<>, std::integral Result = std::size_t>
+Result bubble_sort(Iterator begin, Iterator end, Comparator comparator = {}) {
     if (begin == end || std::next(begin) == end) {
-        return;
+        return 0;
     }
 
-    for (auto a = begin; a != end; ++a) {
-        bool swapped = false;
-        for (auto b = begin; std::next(b) != end; ++b) {
+    Result loopCount = 0;
+
+    for (auto a = std::prev(end); a != begin; --a) {
+        for (auto b = begin; b != a; ++b) {
             if (comparator(*std::next(b), *b)) {
                 std::swap(*std::next(b), *b);
-                swapped = true;
             }
-        }
-        if (!swapped) {
-            break;
+            ++loopCount;
         }
     }
+
+    return loopCount;
 }

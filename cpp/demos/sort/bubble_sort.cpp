@@ -3,35 +3,36 @@
 #include "demo_registry.hpp"
 
 #include <algorithm>
-#include <iostream>
 #include <numeric>
+#include <print>
 #include <random>
 #include <string>
 #include <vector>
 
-constexpr auto ELEMENT_COUNT = 10'000;
+constexpr auto ELEMENT_COUNT = 1'00;
 
 static void bubble_sort_demo([[maybe_unused]] const std::vector<std::string>& args) {
-    std::cout << "Bubble Sort Demo" << std::endl;
-    std::cout << ELEMENT_COUNT << " 件のデータを準備します..." << std::endl;
+    std::println("Bubble Sort Demo");
+    std::println("{:L} 件のデータを準備します...", ELEMENT_COUNT);
 
     std::vector<int> v(ELEMENT_COUNT);
     std::iota(v.begin(), v.end(), 1);
 
-    std::cout << ELEMENT_COUNT << " 件のデータをシャッフルします..." << std::endl;
+    std::println("{:L} 件のデータをシャッフルします...", ELEMENT_COUNT);
 
     std::shuffle(v.begin(), v.end(), std::mt19937(std::random_device()()));
 
-    std::cout << ELEMENT_COUNT << " 件のデータをソートします..." << std::endl;
+    std::println("{:L} 件のデータをソートします...", ELEMENT_COUNT);
 
-    bubble_sort(v.begin(), v.end(), std::less<>());
+    auto loopCount = bubble_sort(v.begin(), v.end(), std::less<>());
 
-    std::cout << ELEMENT_COUNT << " 件のデータのソートが完了しました。" << std::endl;
+    std::println("{:L} 件のデータのソートが完了しました。", ELEMENT_COUNT);
+    std::println("ループ回数: {:L}", loopCount);
 
     for (auto n : v) {
-        std::cout << n << ' ';
+        std::print("{} ", n);
     }
-    std::cout << '\n';
+    std::println();
 }
 
 REGISTER_DEMO(bubble_sort, bubble_sort_demo);
