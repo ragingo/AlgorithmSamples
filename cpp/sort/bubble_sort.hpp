@@ -6,7 +6,7 @@
 
 template <typename Iterator, typename Comparator = std::less<>>
 void bubble_sort(Iterator begin, Iterator end, Comparator comparator = {}) {
-    if (std::distance(begin, end) < 2) {
+    if (begin == end || std::next(begin) == end) {
         return;
     }
 
