@@ -2,6 +2,8 @@
 #include <vector>
 #include <catch2/catch_test_macros.hpp>
 
+using namespace AlgorithmSamples::Sort;
+
 TEST_CASE("昇順ソート") {
     std::vector v = {5, 3, 1, 4, 2};
     bubble_sort(v.begin(), v.end());

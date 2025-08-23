@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+using namespace AlgorithmSamples::Sort;
+
 constexpr auto ELEMENT_COUNT = 1'00;
 
 static void bubble_sort_demo([[maybe_unused]] const std::vector<std::string>& args) {
