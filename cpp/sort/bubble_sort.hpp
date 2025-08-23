@@ -44,5 +44,6 @@ constexpr std::array<T, N> bubble_sort_const(const std::array<T, N>& input, Comp
 }
 
 static_assert(bubble_sort_const(std::array{5, 3, 1, 4, 2}) == std::array{1, 2, 3, 4, 5});
+static_assert(bubble_sort_const(std::array{5, 3, 1, 4, 2}, std::greater<>()) == std::array{5, 4, 3, 2, 1});
 
 }  // namespace AlgorithmSamples::Sort
