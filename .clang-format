@@ -65,7 +65,7 @@ BreakInheritanceList: BeforeColon
 BreakStringLiterals: true
 
 # Includes
-IncludeBlocks: Regroup
+IncludeBlocks: Merge
 SortIncludes: true
 IncludeCategories:
   # Related header (main header for .cpp files) - highest priority

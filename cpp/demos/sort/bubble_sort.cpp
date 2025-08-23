@@ -1,7 +1,5 @@
 ﻿#include "sort/bubble_sort.hpp"
-
 #include "demo_registry.hpp"
-
 #include <algorithm>
 #include <numeric>
 #include <print>

@@ -1,5 +1,4 @@
 ﻿#include "demo_registry.hpp"
-
 #include <algorithm>
 #include <chrono>
 #include <functional>

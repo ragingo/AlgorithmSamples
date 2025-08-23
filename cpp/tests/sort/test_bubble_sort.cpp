@@ -1,7 +1,5 @@
 ﻿#include "sort/bubble_sort.hpp"
-
 #include <vector>
-
 #include <catch2/catch_test_macros.hpp>
 
 TEST_CASE("昇順ソート") {
