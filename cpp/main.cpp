@@ -11,13 +11,9 @@
 
 namespace {
 static std::vector<std::pair<std::string, DemoFn>> g_demos;
-
-struct RegistrarImpl {
-    RegistrarImpl(const std::string& name, DemoFn fn) { g_demos.emplace_back(name, fn); }
-};
 }  // namespace
 
-DemoRegistrar::DemoRegistrar(const std::string& name, DemoFn fn) { static RegistrarImpl impl(name, fn); }
+DemoRegistrar::DemoRegistrar(const std::string& name, DemoFn fn) { g_demos.emplace_back(name, fn); }
 
 void register_demo(const std::string& name, DemoFn fn) { g_demos.emplace_back(name, fn); }
 
