@@ -9,7 +9,7 @@
 
 using namespace AlgorithmSamples::Sort;
 
-constexpr auto ELEMENT_COUNT = 1'00;
+constexpr auto ELEMENT_COUNT = 1'000;
 
 static void bubble_sort_demo([[maybe_unused]] const std::vector<std::string>& args) {
     std::println("Bubble Sort Demo");
