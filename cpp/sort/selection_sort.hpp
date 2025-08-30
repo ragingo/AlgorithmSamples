@@ -54,7 +54,6 @@ constexpr std::array<T, N> selection_sort_const(const std::array<T, N>& input, C
     return arr;
 }
 
-constexpr auto __a = selection_sort_const(std::array{5, 3, 1, 4, 2});
 static_assert(selection_sort_const(std::array{5, 3, 1, 4, 2}) == std::array{1, 2, 3, 4, 5});
 static_assert(selection_sort_const(std::array{5, 3, 1, 4, 2}, std::greater<>()) == std::array{5, 4, 3, 2, 1});
 
