@@ -61,24 +61,28 @@ TEST_CASE("selection_sort - 重複要素あり") {
     REQUIRE(loop_count > 0);
 }
 
-TEST_CASE("selection_sort_const - コンパイル時ソート") {
-    constexpr auto result = selection_sort_const(std::array{5, 3, 1, 4, 2});
-    REQUIRE(result == std::array{1, 2, 3, 4, 5});
+TEST_CASE("selection_sort - コンパイル時ソート") {
+    constexpr auto result = selection_sort(std::array{5, 3, 1, 4, 2});
+    REQUIRE(std::get<0>(result) == std::array{1, 2, 3, 4, 5});
+    REQUIRE(std::get<1>(result) > 0);
 }
 
-TEST_CASE("selection_sort_const - コンパイル時降順ソート") {
-    constexpr auto result = selection_sort_const(std::array{5, 3, 1, 4, 2}, std::greater<>());
-    REQUIRE(result == std::array{5, 4, 3, 2, 1});
+TEST_CASE("selection_sort - コンパイル時降順ソート") {
+    constexpr auto result = selection_sort(std::array{5, 3, 1, 4, 2}, std::greater<>());
+    REQUIRE(std::get<0>(result) == std::array{5, 4, 3, 2, 1});
+    REQUIRE(std::get<1>(result) > 0);
 }
 
-TEST_CASE("selection_sort_const - 空配列") {
-    constexpr auto result = selection_sort_const(std::array<int, 0>{});
-    REQUIRE(result == std::array<int, 0>{});
+TEST_CASE("selection_sort - 空配列") {
+    constexpr auto result = selection_sort(std::array<int, 0>{});
+    REQUIRE(std::get<0>(result) == std::array<int, 0>{});
+    REQUIRE(std::get<1>(result) == 0);
 }
 
-TEST_CASE("selection_sort_const - 単一要素") {
-    constexpr auto result = selection_sort_const(std::array{42});
-    REQUIRE(result == std::array{42});
+TEST_CASE("selection_sort - 単一要素") {
+    constexpr auto result = selection_sort(std::array{42});
+    REQUIRE(std::get<0>(result) == std::array{42});
+    REQUIRE(std::get<1>(result) == 0);
 }
 
 TEST_CASE("selection_sort - 文字列ソート") {

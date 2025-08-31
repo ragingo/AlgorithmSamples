@@ -3,6 +3,7 @@
 #include <cassert>
 #include <concepts>
 #include <iterator>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -33,28 +34,14 @@ constexpr Result selection_sort(Iterator begin, Iterator end, Comparator compara
 }
 
 template <std::integral T, std::size_t N, typename Comparator = std::less<>>
-constexpr std::array<T, N> selection_sort_const(const std::array<T, N>& input, Comparator comparator = {}) {
+constexpr std::tuple<std::array<T, N>, size_t> selection_sort(const std::array<T, N>& input,
+                                                              Comparator comparator = {}) {
     std::array<T, N> arr = input;
-    if (input.begin() == input.end() || std::next(input.begin()) == input.end()) {
-        return arr;
-    }
-
-    for (auto a = arr.begin(); a != arr.end(); ++a) {
-        auto target = a;
-        for (auto b = std::next(a); b != arr.end(); ++b) {
-            if (comparator(*b, *target)) {
-                target = b;
-            }
-        }
-        if (target != a) {
-            std::swap(*a, *target);
-        }
-    }
-
-    return arr;
+    auto loopCount = selection_sort(arr.begin(), arr.end(), comparator);
+    return std::make_tuple(arr, loopCount);
 }
 
-static_assert(selection_sort_const(std::array{5, 3, 1, 4, 2}) == std::array{1, 2, 3, 4, 5});
-static_assert(selection_sort_const(std::array{5, 3, 1, 4, 2}, std::greater<>()) == std::array{5, 4, 3, 2, 1});
+static_assert(std::get<0>(selection_sort(std::array{5, 3, 1, 4, 2})) == std::array{1, 2, 3, 4, 5});
+static_assert(std::get<0>(selection_sort(std::array{5, 3, 1, 4, 2}, std::greater<>())) == std::array{5, 4, 3, 2, 1});
 
 }  // namespace AlgorithmSamples::Sort
